@@ -3,16 +3,11 @@ import figlet from 'figlet';
 import readlineSync from 'readline-sync';
 import { start } from "./server.js";
 
-// function X (min, max) {
-//   min = Math.ceil(min) || 0;
-//   max = Math.floor(max) || 100;
-//   return Math.floor(Math.random() * (max - min + 1)) + min;
-// }
-
 class Player {
   constructor() {
     this.hp = 100;
     this.atk = 10;
+    this.maxatk = this.atk*2;
   }
 
   attack() {
@@ -21,14 +16,14 @@ class Player {
   }
 
   critical() {
-
+    
   }
 }
 
 class Monster {
   constructor(stage) {
     this.hp = Math.round(100 + (stage - 1) * 16.67);
-    this.atk = 10;
+    this.atk = Math.round(10 + (stage - 1) * 1.67);;
   }
 
   attack() {
@@ -86,7 +81,7 @@ const battle = async (stage, player, monster) => {
           monster.hp = 0;
           break;
         }
-        monster.attack();
+        player.hp -= monster.attack();
         logs.push(chalk.red(`${monster.attack()}의 데미지를 받았습니다.`));
         // 여기에서 새로운 게임 시작 로직을 구현
         break;
@@ -94,8 +89,9 @@ const battle = async (stage, player, monster) => {
         logs.push(chalk.yellow('도망치기에 성공했습니다!'));
         monster.kill();
         break;
-      case '2':
-        logs.push(chalk.blue('구현 준비중입니다.. 게임을 시작하세요'));
+      case '7':
+        player.hp -= monster.attack();
+        logs.push(chalk.red(`${monster.attack()}의 데미지를 받았습니다.`))
         // 옵션 메뉴 로직을 구현
         break;
       case '0':
@@ -135,7 +131,31 @@ const battle = async (stage, player, monster) => {
       };
       break;
     };
-
+    if(player.hp <= 0){
+      player.hp = 0;
+      console.clear();
+      displayStatus(stage, player, monster);
+      logs.forEach((log) => console.log(log));
+      console.log(
+        chalk.redBright(
+          figlet.textSync(`GAME OVER`, {
+            font: 'Standard',
+            horizontalLayout: 'default',
+            verticalLayout: 'default'
+          })
+        )
+      );
+      while (stage < 10) {
+        const choice2 = readlineSync.question('메인화면으로 돌아가시려면 1을 입력해주세요. ');
+        switch (choice2) {
+          case '1':
+            start();
+            break;
+          default:
+            console.log(chalk.red('올바른 입력을 해주세요.'));
+        };
+      };
+    };
   };
 
 };
@@ -149,6 +169,7 @@ export async function startGame() {
     const monster = new Monster(stage);
     await battle(stage, player, monster);
     player.hp = Math.ceil(100 + (stage * 22.2));
+    player.atk = Math.ceil(10 + (stage * 2.22));
     // 스테이지 클리어 및 게임 종료 조건
     // setInterval();
     stage++;
