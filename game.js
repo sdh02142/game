@@ -7,7 +7,6 @@ class Player {
   constructor() {
     this.hp = 100;
     this.atk = 10;
-    this.maxatk = this.atk*2;
   }
 
   attack() {
@@ -16,23 +15,52 @@ class Player {
   }
 
   critical() {
-    
+    let pluck = Math.random()*100;
+    if (pluck <= 50){
+      return this.atk*2;
+    } else if (pluck <= 95) {
+      return this.atk;
+    } else {
+      return Math.ceil(this.atk/4);
+    };
+  }
+
+  defence(){
+    let pluck3 = Math.random()*100;
+    if (pluck3 <= 70){
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  run(){
+    let pluck2 = Math.random()*100;
+    if (pluck2 <= 50){
+      return true;
+    } else {
+      return false;
+    }
   }
 }
 
 class Monster {
   constructor(stage) {
     this.hp = Math.round(100 + (stage - 1) * 16.67);
-    this.atk = Math.round(10 + (stage - 1) * 1.67);;
+    this.atk = Math.round(10 + (stage - 1) * 1.67);
   }
 
   attack() {
-    // 몬스터의 공격
-    return this.atk
+    let mluck = Math.random()*100;
+    if (mluck <= 15) {
+      return Math.ceil(this.atk*1.8);
+    } else {
+      return this.atk;
+    };
   }
 
-  critical() {
-
+  penalty() {
+    return this.atk*3;
   }
 
   kill() {
@@ -41,17 +69,17 @@ class Monster {
 }
 
 function displayStatus(stage, player, monster) {
-  console.log(chalk.magentaBright(`\n===================================== Current Status =====================================`));
+  console.log(chalk.magentaBright(`\n=========================================== Current Status ===========================================\n`));
   console.log(
     chalk.cyanBright(`| Stage : ${stage} |`) +
     chalk.blueBright(
-      `| 플레이어  hp : ${player.hp}  atk : ${player.atk} |`,
+      `| 플레이어  hp : ${player.hp}  atk : ${player.atk}-${player.atk*2} |`,
     ) +
     chalk.redBright(
-      `| 몬스터  hp : ${monster.hp}  atk : ${monster.atk} |`,
+      `| 몬스터  hp : ${monster.hp}  atk : ${monster.atk}-${Math.ceil(monster.atk*1.8)} |`,
     ),
   );
-  console.log(chalk.magentaBright(`==========================================================================================\n`));
+  console.log(chalk.magentaBright(`\n======================================================================================================\n`));
 }
 
 const battle = async (stage, player, monster) => {
@@ -65,46 +93,87 @@ const battle = async (stage, player, monster) => {
 
     console.log(
       chalk.green(
-        `\n1. 공격한다 2. 도망친다`,
+        `\n1. 일반 공격  2. 크리티컬 어택(성공률 50% , 실패율 5%)  3. 방패들기(성공율 70%, 숨고르기 확률 15%)`,
+      ),
+    );
+    console.log(
+      chalk.green(
+        `9. 도망치기(성공률 50%, 패널티 확률 70%)`,
+      ),
+    );
+    console.log(
+      chalk.green(
+        `                                                                                0. 로비로 돌아가기`,
       ),
     );
     const choice = readlineSync.question('당신의 선택은? ');
 
     // 플레이어의 선택에 따라 다음 행동 처리
-    logs.push(chalk.green(`${choice}을(를) 선택하셨습니다.`));
 
     switch (choice) {
       case '1':
+        logs.push(chalk.green(`공격을 선택하셨습니다.`));
         monster.hp -= player.attack();
         logs.push(chalk.green(`monster에게 ${player.attack()}의 데미지를 줍니다.`));
         if (monster.hp <= 0) {
           monster.hp = 0;
           break;
-        }
-        player.hp -= monster.attack();
-        logs.push(chalk.red(`${monster.attack()}의 데미지를 받았습니다.`));
+        };
+        let matk = monster.attack();
+        player.hp -= matk;
+        logs.push(chalk.red(`${matk}의 데미지를 받았습니다.`));
         // 여기에서 새로운 게임 시작 로직을 구현
         break;
-      case '9':
-        logs.push(chalk.yellow('도망치기에 성공했습니다!'));
-        monster.kill();
+      case '2':
+        logs.push(chalk.green(`크리티컬 어택을 선택하셨습니다.`));
+        let pcri = player.critical();
+        monster.hp -= pcri;
+        logs.push(chalk.green(`monster에게 ${pcri}의 데미지를 줍니다.`));
+        if (monster.hp <= 0) {
+          monster.hp = 0;
+          break;
+        };
+        let matk2 = monster.attack();
+        player.hp -= matk2;
+        logs.push(chalk.red(`${matk2}의 데미지를 받았습니다.`));
         break;
-      case '7':
-        player.hp -= monster.attack();
-        logs.push(chalk.red(`${monster.attack()}의 데미지를 받았습니다.`))
-        // 옵션 메뉴 로직을 구현
+      case '3':
+        if(player.defence()){
+          logs.push(chalk.yellow('몬스터의 공격을 방어했습니다!'));
+          let pluck4 = Math.random()*100;
+          if(pluck4 <= 15) {
+            player.hp += 15;
+            logs.push(chalk.green(`숨고르기에 성공하여 15 회복했습니다!`));
+          };
+        } else {
+          logs.push(chalk.magentaBright('방어에 실패했습니다!'));
+          let matk3 = monster.attack();
+          player.hp -= matk3;
+          logs.push(chalk.red(`${matk3}의 데미지를 받았습니다.`));
+        };
+        break;
+      case '9':
+        if(player.run()) {
+          monster.kill();
+          logs.push(chalk.yellow('도망치기에 성공했습니다!'));
+        } else {
+          logs.push(chalk.magentaBright('도망치기에 실패했습니다!'));
+          let pluck5 = Math.random()*100;
+          if (pluck5 <= 70) {
+          player.hp -= monster.penalty();
+          logs.push(chalk.red(`패널티로 ${monster.penalty()}의 데미지를 받았습니다.`));
+        };
+        };
         break;
       case '0':
         console.log(chalk.magentaBright('1을 입력하시면 로비로 돌아갑니다.'));
-        const choice3 = readlineSync.question('잘못 누르셨다면 아무 키를 입력해주세요. ');
+        const choice3 = readlineSync.question('잘못 누르셨다면 1을 제외한 아무 키를 입력해주세요. ');
         if (choice3 === '1') {
           start();
-        }
-        // 게임 종료 로직을 구현
+        };
         break;
       default:
         logs.push(chalk.red('올바른 입력을 해주세요.'));
-      //handleUserInput(); // 유효하지 않은 입력일 경우 다시 입력 받음
     };
 
     if (monster.hp <= 0) {
@@ -187,6 +256,7 @@ export async function startGame() {
       )
     );
     while (stage >= 11) {
+      console.log('클리어를 축하합니다! Thank you for playing!');
       const choice2 = readlineSync.question('메인화면으로 돌아가시려면 1을 입력해주세요. ');
       switch (choice2) {
         case '1':
